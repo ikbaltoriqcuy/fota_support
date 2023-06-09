@@ -1,5 +1,6 @@
 package com.example.fotatest.ui
 
+import android.R.attr.process
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -8,8 +9,8 @@ import android.os.Environment
 import android.provider.Settings
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.content.FileProvider
 import com.example.fotatest.R
 import com.example.fotatest.databinding.ActivityMainBinding
 import com.example.fotatest.utils.PermissionsHelper
@@ -67,17 +68,35 @@ class MainActivity : AppCompatActivity() {
                 /** to be implement action failed **/
             }
         }
+
+        if (requestCode == INSTALL_PACKAGE_DONE) {
+            if (resultCode == RESULT_OK) {
+                Toast.makeText(this@MainActivity, "install success ${resultCode}", Toast.LENGTH_SHORT).show()
+            } else {
+                Toast.makeText(this@MainActivity, "install failed ${data?.dataString}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     private fun installPackage() {
         val externalStoragePath: String = Environment.getExternalStorageDirectory().absolutePath
         val packageFile = File("$externalStoragePath$ADDITIONAL_PATH")
+//
+//        val apkUri = FileProvider.getUriForFile(this, AUTHORITY_FILE_PROVIDER , packageFile)
+//        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
+//            .setData(apkUri)
+//            .putExtra(Intent.EXTRA_RETURN_RESULT, true)
+//            .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+//        startActivityForResult(intent, INSTALL_PACKAGE_DONE)
 
-        val apkUri = FileProvider.getUriForFile(this, AUTHORITY_FILE_PROVIDER , packageFile)
-        val intent = Intent(Intent.ACTION_INSTALL_PACKAGE)
-            .setData(apkUri)
-            .setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        startActivity(intent)
+        val process  = Runtime.getRuntime().exec("pm install -r ${packageFile.absolutePath}")
+
+        val result: Int = process.waitFor()
+        if (result == 0) {
+            Toast.makeText(this@MainActivity, "Install success", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this@MainActivity, "Install failed", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -93,6 +112,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     companion object {
+        const val INSTALL_PACKAGE_DONE = 123
         const val REQUEST_INSTALL_PACKAGES = 111
         const val REQUEST_PERMISSION = 112
         const val ADDITIONAL_PATH = "/apk_install/lindur.apk"
